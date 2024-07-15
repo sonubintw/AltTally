@@ -1,6 +1,8 @@
 import express, { Express, Request, Response } from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import authRoutes from './src/routes/auth';
+import userRoutes from './src/routes/user';
 
 dotenv.config();
 
@@ -16,6 +18,15 @@ const PORT: string | number = process.env.PORT || 5000;
 app.get("/uat/test", (req: Request, res: Response) => {
     res.send("Express + TypeScript Server ");
 });
+
+app.use(express.json());
+
+
+// Define authentication routes
+app.use('/auth', authRoutes);
+
+// Define user routes
+app.use('/user', userRoutes);
 
 mongoose.connect(process.env.DB_URI ?? "").then(() => {
     app.listen(PORT, () => {
