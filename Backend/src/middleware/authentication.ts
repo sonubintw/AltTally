@@ -23,7 +23,8 @@ const authenticate = async (req: IGetUserAuthInfoRequest, res: Response, next: N
         req.user = user;
         next();
     } catch (error) {
-        res.status(401).json({ message: 'Invalid token' });
+        next(error);
+
     }
 };
 

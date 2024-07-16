@@ -4,19 +4,35 @@ import User from '../models/User';
 import { NextFunction, Request, Response } from 'express';
 
 // Register a new user
+let customError: any
 export const register = async (req: Request, res: Response, next: NextFunction) => {
     const { username, email, password } = req.body;
 
     try {
-        const hashedPassword: string = await bcrypt.hash(password, 10);
-        const user = new User({ username, email, password: hashedPassword });
+        // const hashedPassword: string = await bcrypt.hash(password, 10);
+        const user = new User({ username, email, password });
         console.log(user);
+
+        if (!email || !username || !password) {
+            customError = new Error('Pura bhar saale')
+            res.status(400)
+            return next(customError)
+        }
+
+        const userExist = await User.findOne({ email })
+        if (userExist) {
+            let err = new Error("Email already exists")
+            res.status(400)
+            return next(err)
+        }
+
 
         await user.save();
         res.json({ message: 'Registration successful' });
     } catch (error: any | unknown) {
         console.log(error);
-
+        res.status(406)
+        customError = new Error('mkb')
         //pass control to the next middleware to not break the code/server
         next(error);
     }
@@ -26,17 +42,24 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
     const { username, password } = req.body;
 
+
     try {
         const user = await User.findOne({ username });
+
+
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            // return res.status(404).json({ message: 'User not found' });
+
         }
 
-        const passwordMatch = await user.comparePassword(password);
-        console.log(passwordMatch);
+        // const passwordMatch: boolean = await user.comparePassword(password);
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        console.log("line 50", passwordMatch);
 
         if (!passwordMatch) {
-            return res.status(401).json({ message: 'Incorrect password' });
+            customError = new Error('Check your password or username')
+            res.status(400)
+            return next(customError)
         }
 
         const token: string = jwt.sign({ userId: user._id }, `${process.env.SECRET_KEY}`, {
