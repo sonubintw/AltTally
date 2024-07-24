@@ -14,14 +14,21 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         console.log(user);
 
         if (!email || !username || !password) {
-            customError = new Error('Pura bhar saale')
+            customError = new Error('Please fill all the required fields')
             res.status(400)
             return next(customError)
         }
 
         const userExist = await User.findOne({ email })
         if (userExist) {
-            let err = new Error("Email already exists")
+            let err = new Error("Email already exists please try logging in")
+            res.status(400)
+            return next(err)
+        }
+
+        const usernameExist = await User.findOne({ username })
+        if (usernameExist) {
+            let err = new Error(`UserName ${username} thas already been taken`)
             res.status(400)
             return next(err)
         }
