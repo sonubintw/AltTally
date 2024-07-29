@@ -53,10 +53,11 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     try {
         const user = await User.findOne({ username });
 
-
         if (!user) {
-            // return res.status(404).json({ message: 'User not found' });
-
+            // User not found
+            customError = new Error('User not found');
+            res.status(400);
+            return next(customError);
         }
 
         // const passwordMatch: boolean = await user.comparePassword(password);
@@ -74,6 +75,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         });
         res.json({ token });
     } catch (error) {
+        console.log("error")
         next(error);
     }
 };
