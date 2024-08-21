@@ -5,7 +5,13 @@ import authRoutes from './src/routes/auth';
 import userRoutes from './src/routes/user';
 import { erroHandler } from "./src/middleware/errorHandler";
 import { auth } from 'express-openid-connect';
+import path from "path";
 
+import expressSession from "express-session";
+import passport, { Profile } from "passport";
+import Auth0Strategy, { ExtraVerificationParams, StrategyOption } from "passport-auth0";
+// const authRouter = require("./auth");
+import authRouter from "./src/routes/auth"
 dotenv.config();
 
 //defining port
@@ -17,6 +23,91 @@ app.get("/uat/test", (req: Request, res: Response) => {
     res.send("Express + TypeScript Server ");
 });
 
+
+/**
+ * Session Configuration 
+ * https://auth0.com/blog/create-a-simple-and-secure-node-express-app/ reference
+ */
+const session: any = {
+    secret: process.env.SESSION_SECRET,
+    cookie: {},
+    resave: false,
+    saveUninitialized: false
+};
+
+if (app.get("env") === "production") {
+    // Serve secure cookies, requires HTTPS
+    session.cookie.secure = true;
+}
+
+
+
+/**
+ * Passport Configuration (New!)
+ */
+
+
+
+const strategy = new Auth0Strategy(
+    {
+        domain: process.env.AUTH0_DOMAIN,//from https://auth0.com/ site userAcc i got this which is me:) only
+        clientID: process.env.AUTH0_CLIENT_ID,
+        clientSecret: process.env.AUTH0_CLIENT_SECRET,
+        callbackURL: process.env.AUTH0_CALLBACK_URL
+    } as StrategyOption,
+
+    //verify callback function to  finding the user that possesses a set of credentials.
+    function (accessToken: string, refreshToken: string, extraParams: ExtraVerificationParams, profile: Profile, done: (error: any, user?: any, info?: any) => void,): void {
+        /**
+         * Access tokens are used to authorize users to an API
+         * (resource server)
+         * accessToken is the token to call the Auth0 API
+         * or a secured third-party API
+         * extraParams.id_token has the JSON Web Token
+         * profile has all the information from the user
+         */
+        return done(null, profile);
+    }
+);
+
+
+
+
+/**
+ *  App Configuration
+ */
+
+app.set("views", path.join(__dirname, "views"));
+// console.log(__dirname)
+app.set("view engine", "pug");
+app.use(express.static(path.join(__dirname, "public")));
+
+app.use(expressSession(session));
+
+passport.use(strategy);
+app.use(passport.initialize());//initializing 
+app.use(passport.session());
+
+passport.serializeUser((user: Express.User, done: (err: any, id?: any) => void) => {
+    done(null, user);
+});
+
+passport.deserializeUser((user: Express.User, done: (err: any, id?: any) => void) => {
+    done(null, user);
+});
+
+
+// Creating custom middleware with Express
+app.use((req, res, next) => {
+    res.locals.isAuthenticated = req.isAuthenticated();
+    next();
+});
+
+
+
+// Router mounting
+
+app.use("/", authRouter);// auth from auth0
 app.use(express.json());
 
 //authentication routes
@@ -40,19 +131,3 @@ mongoose.connect(process.env.DB_URI ?? "").then(() => {
 
 
 
-const config = {
-    authRequired: false,
-    auth0Logout: true,
-    secret: 'a long, randomly-generated string stored in env',
-    baseURL: 'http://localhost:8000',
-    clientID: '3wAO1dH9uP6lv8k2wROdfBzfK4aOjr95',
-    issuerBaseURL: 'https://dev-legwfqyphpnvj7ji.us.auth0.com'
-};
-
-// auth router attaches /login, /logout, and /callback routes to the baseURL
-app.use(auth(config));
-
-// req.isAuthenticated is provided from the auth router
-app.get('/', (req, res) => {
-    res.send(req.oidc.isAuthenticated() ? 'Logged in' : 'Logged out');
-});

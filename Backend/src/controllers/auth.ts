@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import User from '../models/User';
 import { NextFunction, Request, Response } from 'express';
 
+
 // Register a new user
 let customError: any
 export const register = async (req: Request, res: Response, next: NextFunction) => {
@@ -79,5 +80,8 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         next(error);
     }
 };
+
+
+
 
 module.exports = { register, login };
