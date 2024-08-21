@@ -78,7 +78,7 @@ const strategy = new Auth0Strategy(
  */
 
 app.set("views", path.join(__dirname, "views"));
-// console.log(__dirname)
+
 app.set("view engine", "pug");
 app.use(express.static(path.join(__dirname, "public")));
 
